@@ -1,0 +1,6 @@
+board:
+  name: my_new_board
+  full_name: My Board FROM SCRATCH 
+  vendor: iomico
+  socs:
+    - name: stm32f407xx
