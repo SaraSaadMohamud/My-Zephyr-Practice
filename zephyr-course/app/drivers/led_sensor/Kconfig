@@ -1,0 +1,4 @@
+config OUR_LED_SENSOR
+    bool "Our Led Sensor Driver"
+    default y
+    depends on SENSOR && GPIO
