@@ -3,6 +3,9 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 #include <errno.h>
+#include <stdbool.h>
+
+#include "led_sensor.h"
 
 LOG_MODULE_REGISTER(our_led_sensor, LOG_LEVEL_INF);
 
@@ -14,15 +17,24 @@ struct led_sensor_config {
     struct gpio_dt_spec led;
 };
 
+struct led_sensor_data {
+    bool enabled;
+};
 
 /* Turn the LED ON when sensor_sample_fetch() is called */
 static int led_sensor_sample_fetch(const struct device *dev,
                                    enum sensor_channel chan)
 {
     const struct led_sensor_config *config = dev->config;
+    const struct led_sensor_data *data = dev->data;
 
     ARG_UNUSED(chan);
 
+    if (!data->enabled) {
+        (void)gpio_pin_set_dt(&config->led, 0);
+        return -EACCES;
+    }
+    
     int ret = gpio_pin_set_dt(&config->led, 1);
 
     if (ret < 0) {
@@ -54,6 +66,22 @@ static int led_sensor_channel_get(const struct device *dev,
     }
 
     LOG_INF("LED turned OFF");
+
+    return 0;
+}
+
+int led_sensor_set_enabled(const struct device *dev, bool enabled)
+{
+    if (dev == NULL || !device_is_ready(dev)) {
+        return -ENODEV;
+    }
+
+    struct led_sensor_data *data = dev->data;
+
+    data->enabled = enabled;
+
+    LOG_INF("LED sensor enabled: %s",
+            enabled ? "true" : "false");
 
     return 0;
 }
@@ -93,13 +121,16 @@ static int led_sensor_init(const struct device *dev)
 /* Create one device instance for every enabled matching DT node */
 #define LED_SENSOR_DEFINE(inst)                                      \
     static const struct led_sensor_config led_sensor_config_##inst = { \
-        .led = GPIO_DT_SPEC_INST_GET(inst, led_gpios),               \
-    };                                                               \
+        .led = GPIO_DT_SPEC_INST_GET(inst, led_gpios),                \
+    };                                                                \
+    static struct led_sensor_data led_sensor_data_##inst = {          \
+        .enabled = true,                                              \
+    };                                                                \
     DEVICE_DT_INST_DEFINE(                                            \
         inst,                                                         \
         led_sensor_init,                                              \
         NULL,                                                         \
-        NULL,                                                         \
+        &led_sensor_data_##inst,                                      \
         &led_sensor_config_##inst,                                    \
         POST_KERNEL,                                                  \
         90,                                                           \
