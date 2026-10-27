@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <stdlib.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/shell/shell.h>
@@ -12,6 +14,45 @@
 
 static const struct device *sensor_dev = DEVICE_DT_GET(SENSOR_NODE);
 
+static int cmd_sensor_set(const struct shell *sh,
+                          size_t argc, 
+                          char **argv)
+{
+    char *endptr;
+    long value;
+
+    ARG_UNUSED(argc);
+
+    errno = 0;
+    value = strtol(argv[1], &endptr, 10);
+
+    if (errno != 0 || argv[1][0] == '\0' || *endptr != '\0') {
+        shell_error(sh, "Invalid value. Use 0 or 1.");
+        return -EINVAL;
+    }
+
+    if (value < 0 || value > 1) {
+        shell_error(sh, "Value out of range. Allowed values: 0 or 1.");
+        return -ERANGE;
+    }
+
+    if (!device_is_ready(sensor_dev)) {
+        shell_error(sh, "Sensor device is not ready.");
+        return -ENODEV;
+    }
+
+    int ret = led_sensor_set_enabled(sensor_dev, value == 1);
+
+    if (ret < 0) {
+        shell_error(sh, "Failed to update sensor state: %d", ret);
+        return ret;
+    }
+
+    shell_print(sh, "Sensor %s successfully.",
+                value == 1 ? "enabled" : "disabled");
+
+    return 0;
+}
 
 /*
  * Fetch sensor data.
@@ -131,6 +172,13 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
               NULL,
               "Show sensor device information",
               cmd_sensor_info),
+
+    SHELL_CMD_ARG(set, 
+                  NULL,
+                  "Set sensor enabled state (0 or 1)",
+                  cmd_sensor_set, 
+                  1, 
+                  0),
 
     SHELL_SUBCMD_SET_END
 );
