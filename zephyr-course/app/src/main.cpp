@@ -1,4 +1,4 @@
-#include <zephyr/device.h>
+/*#include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -65,6 +65,18 @@ int main()
     k_msleep(1000);
     }
     
+
+    return 0;
+}*/
+
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
+
+int main(void)
+{
+    LOG_INF("LED Sensor Shell application started");
 
     return 0;
 }

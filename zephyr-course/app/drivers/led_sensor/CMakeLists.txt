@@ -1,3 +1,6 @@
 if(CONFIG_OUR_LED_SENSOR)
     target_sources(app PRIVATE led_sensor.c)
+    if(CONFIG_SHELL)
+        target_sources(app PRIVATE led_sensor_shell.c)
+    endif()
 endif ()

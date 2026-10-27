@@ -54,16 +54,28 @@ static int led_sensor_channel_get(const struct device *dev,
                                   struct sensor_value *val)
 {
     const struct led_sensor_config *config = dev->config;
-
     ARG_UNUSED(chan);
-    ARG_UNUSED(val);
+
+    if (val == NULL) 
+    {
+        return -EINVAL;
+    }
 
     int ret = gpio_pin_set_dt(&config->led, 0);
 
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         LOG_ERR("Failed to turn LED OFF: %d", ret);
         return ret;
     }
+
+    /*
+     * This is a demonstration sensor.
+     * It returns zero because it does not measure
+     * a physical quantity.
+     */
+    val->val1 = 0;
+    val->val2 = 0;
 
     LOG_INF("LED turned OFF");
 
