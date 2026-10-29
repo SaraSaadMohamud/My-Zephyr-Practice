@@ -204,3 +204,46 @@ ZTEST(ring_buf_boundaries, test_is_full_after_fill)
     zassert_equal(rb_count(), 4,
                   "Buffer count should equal its capacity");
 }
+
+ZTEST(ring_buf_init, test_init_zero_capacity_returns_einval)
+{
+    zassert_equal(rb_init(0U), -EINVAL,
+                  "Initializing with zero capacity should return -EINVAL");
+}
+
+ZTEST(ring_buf_init, test_init_capacity_over_max_returns_einval)
+{
+    zassert_equal(rb_init(RING_BUF_MAX_CAPACITY + 1U), -EINVAL,
+                  "Capacity above maximum should return -EINVAL");
+}
+
+ZTEST(ring_buf_push_pop, test_pop_empty_returns_enodata)
+{
+    int value = 0;
+
+    zassert_equal(rb_init(4U), 0,
+                  "Buffer initialization should succeed");
+
+    zassert_equal(rb_pop(&value), -ENODATA,
+                  "Popping from an empty buffer should return -ENODATA");
+}
+
+ZTEST(ring_buf_boundaries, test_peek_null_returns_einval)
+{
+    zassert_equal(rb_init(4U), 0,
+                  "Buffer initialization should succeed");
+
+    zassert_equal(rb_peek(NULL), -EINVAL,
+                  "Peeking with NULL should return -EINVAL");
+}
+
+ZTEST(ring_buf_boundaries, test_peek_empty_returns_enodata)
+{
+    int value = 0;
+
+    zassert_equal(rb_init(4U), 0,
+                  "Buffer initialization should succeed");
+
+    zassert_equal(rb_peek(&value), -ENODATA,
+                  "Peeking an empty buffer should return -ENODATA");
+}
