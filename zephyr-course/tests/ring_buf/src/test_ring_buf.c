@@ -46,8 +46,18 @@ ZTEST(ring_buf_init, test_reinit_clears_state)
 	/* TODO(l8-task1): Push a value, call rb_init(4) again, then
 	 * verify the buffer is empty and count is 0.
 	 * See TEST_SPEC.md "Suite ring_buf_init" #2.
-	 */
-	ztest_test_skip();
+	*/
+	zassert_equal(rb_push(99), 0,
+                  "Push should succeed before reinitialization");
+
+    zassert_equal(rb_init(4), 0,
+                  "Reinitialization should succeed");
+
+    zassert_true(rb_is_empty(),
+                 "Buffer should be empty after reinitialization");
+
+    zassert_equal(rb_count(), 0,
+                  "Buffer count should be zero after reinitialization");
 }
 
 /*
@@ -63,8 +73,22 @@ ZTEST(ring_buf_push_pop, test_single_push_pop)
 {
 	/* TODO(l8-task1): rb_push(42), rb_pop(&v) -> v == 42, buffer empty after.
 	 * See TEST_SPEC.md "Suite ring_buf_push_pop" #1.
-	 */
-	ztest_test_skip();
+	*/
+
+	int value = 0;
+
+	zassert_equal(rb_push(42), 0,
+                  "Push should succeed");
+
+	zassert_equal(rb_pop(&value), 0,
+                  "Pop should succeed");
+
+	zassert_equal(value, 42,
+                  "Popped value should match pushed value");
+
+	zassert_true(rb_is_empty(),
+                 "Buffer should be empty after reinitialization");
+
 }
 
 ZTEST(ring_buf_push_pop, test_fifo_order)
@@ -73,7 +97,23 @@ ZTEST(ring_buf_push_pop, test_fifo_order)
 	 * and verify the values come out as 1, 2, 3 in that order.
 	 * See TEST_SPEC.md "Suite ring_buf_push_pop" #2.
 	 */
-	ztest_test_skip();
+
+	int value = 0;
+
+    zassert_equal(rb_push(1), 0, "Push 1 should succeed");
+    zassert_equal(rb_push(2), 0, "Push 2 should succeed");
+    zassert_equal(rb_push(3), 0, "Push 3 should succeed");
+
+    zassert_equal(rb_pop(&value), 0, "First pop should succeed");
+    zassert_equal(value, 1, "First popped value should be 1");
+
+    zassert_equal(rb_pop(&value), 0, "Second pop should succeed");
+    zassert_equal(value, 2, "Second popped value should be 2");
+
+    zassert_equal(rb_pop(&value), 0, "Third pop should succeed");
+    zassert_equal(value, 3, "Third popped value should be 3");
+
+    zassert_true(rb_is_empty(), "Buffer should be empty after all pops");
 }
 
 ZTEST(ring_buf_push_pop, test_push_full_returns_enospc)
@@ -82,7 +122,19 @@ ZTEST(ring_buf_push_pop, test_push_full_returns_enospc)
 	 * one more value -> -ENOSPC.
 	 * See TEST_SPEC.md "Suite ring_buf_push_pop" #3.
 	 */
-	ztest_test_skip();
+
+	zassert_equal(rb_push(1), 0, "Push 1 should succeed");
+    zassert_equal(rb_push(2), 0, "Push 2 should succeed");
+    zassert_equal(rb_push(3), 0, "Push 3 should succeed");
+	zassert_equal(rb_push(4), 0, "Push 4 should succeed");
+
+	zassert_true(rb_is_full(), "Buffer should be full");
+
+    zassert_equal(rb_push(99), -ENOSPC,
+                  "Push to a full buffer should return -ENOSPC");
+
+    zassert_equal(rb_count(), 4,
+                  "Buffer count should remain 4");
 }
 
 /*
@@ -100,7 +152,31 @@ ZTEST(ring_buf_boundaries, test_peek_does_not_consume)
 	 * -> v == 7; rb_count() still == 1.
 	 * See TEST_SPEC.md "Suite ring_buf_boundaries" #1.
 	 */
-	ztest_test_skip();
+
+	int value = 0;
+
+    zassert_equal(rb_push(7), 0,
+                  "Push should succeed");
+
+    zassert_equal(rb_peek(&value), 0,
+                  "First peek should succeed");
+
+    zassert_equal(value, 7,
+                  "Peek should return the first value");
+
+    zassert_equal(rb_count(), 1,
+                  "Peek should not change the buffer count");
+
+    value = 0;
+
+    zassert_equal(rb_peek(&value), 0,
+                  "Second peek should succeed");
+
+    zassert_equal(value, 7,
+                  "Second peek should return the same value");
+
+    zassert_equal(rb_count(), 1,
+                  "Buffer count should remain unchanged");
 }
 
 ZTEST(ring_buf_boundaries, test_pop_null_returns_einval)
@@ -108,7 +184,8 @@ ZTEST(ring_buf_boundaries, test_pop_null_returns_einval)
 	/* TODO(l8-task1): rb_pop(NULL) -> -EINVAL.
 	 * See TEST_SPEC.md "Suite ring_buf_boundaries" #2.
 	 */
-	ztest_test_skip();
+	 zassert_equal(rb_pop(NULL), -EINVAL,
+                  "Pop with NULL Pointer should return -EINVAL");
 }
 
 ZTEST(ring_buf_boundaries, test_is_full_after_fill)
@@ -116,5 +193,14 @@ ZTEST(ring_buf_boundaries, test_is_full_after_fill)
 	/* TODO(l8-task1): push 4 values -> rb_is_full() == true, rb_count() == 4.
 	 * See TEST_SPEC.md "Suite ring_buf_boundaries" #3.
 	 */
-	ztest_test_skip();
+	zassert_equal(rb_push(1), 0, "Push 1 should succeed");
+    zassert_equal(rb_push(2), 0, "Push 2 should succeed");
+    zassert_equal(rb_push(3), 0, "Push 3 should succeed");
+    zassert_equal(rb_push(4), 0, "Push 4 should succeed");
+
+    zassert_true(rb_is_full(),
+                 "Buffer should be full after pushing 4 elements");
+
+    zassert_equal(rb_count(), 4,
+                  "Buffer count should equal its capacity");
 }
